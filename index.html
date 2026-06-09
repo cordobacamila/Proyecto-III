@@ -4,9 +4,186 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BCRA Daily Info</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #003366;
+      color: white;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    header h1 { font-size: 1.4rem; font-weight: 600; }
+    header p { font-size: 0.85rem; opacity: 0.75; margin-top: 0.2rem; }
+
+    .fecha-badge {
+      margin-left: auto;
+      background: rgba(255,255,255,0.15);
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #003366;
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid #003366;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      transition: transform 0.15s;
+    }
+
+    .card:hover { transform: translateY(-2px); }
+
+    .card .moneda { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 0.3rem; }
+    .card .nombre { font-size: 0.9rem; font-weight: 500; margin-bottom: 0.6rem; color: #333; }
+    .card .valor { font-size: 1.5rem; font-weight: 700; color: #003366; }
+    .card .unidad { font-size: 0.75rem; color: #888; }
+
+    .destacado .valor { color: #c8102e; font-size: 1.8rem; }
+
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #888;
+      font-size: 1rem;
+    }
+
+    .error {
+      background: #fff3f3;
+      border: 1px solid #f5c6c6;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      color: #c8102e;
+      margin-bottom: 1rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
-  <h1>Indicadores BCRA</h1>
-  <p>Informacion diaria del Banco Central de la Republica Argentina.</p>
+
+<header>
+  <div>
+    <h1>BCRA Daily Info</h1>
+    <p>Banco Central de la República Argentina</p>
+  </div>
+  <span class="fecha-badge" id="fecha">Cargando...</span>
+</header>
+
+<main>
+  <div id="app">
+    <div class="loading">Obteniendo datos del BCRA...</div>
+  </div>
+</main>
+
+<footer>Datos provistos por la API pública del BCRA · Actualización diaria</footer>
+
+<script>
+  const MONEDAS_DESTACADAS = ["USD", "EUR", "BRL", "UYU", "CLP"];
+
+  function formatearFecha(fechaStr) {
+    const [y, m, d] = fechaStr.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  function formatearValor(num) {
+    return Number(num).toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function crearCard(item, destacado = false) {
+    const card = document.createElement("div");
+    card.className = "card" + (destacado ? " destacado" : "");
+    card.innerHTML = `
+      <div class="moneda">${item.codigoMoneda}</div>
+      <div class="nombre">${item.descripcion}</div>
+      <div class="valor">$ ${formatearValor(item.tipoCotizacion)}</div>
+      <div class="unidad">ARS por unidad</div>
+    `;
+    return card;
+  }
+
+  async function cargarDatos() {
+    const app = document.getElementById("app");
+
+    try {
+      const res = await fetch("https://api.bcra.gob.ar/estadisticascambiarias/v1.0/Cotizaciones");
+      if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+      const data = await res.json();
+
+      const { fecha, detalle } = data.results;
+
+      document.getElementById("fecha").textContent = formatearFecha(fecha);
+
+      const destacadas = detalle.filter(m => MONEDAS_DESTACADAS.includes(m.codigoMoneda));
+      const resto = detalle.filter(m => !MONEDAS_DESTACADAS.includes(m.codigoMoneda));
+
+      app.innerHTML = "";
+
+      // Monedas principales
+      const tituloDestacadas = document.createElement("h2");
+      tituloDestacadas.className = "section-title";
+      tituloDestacadas.textContent = "Monedas principales";
+      app.appendChild(tituloDestacadas);
+
+      const cardsDestacadas = document.createElement("div");
+      cardsDestacadas.className = "cards";
+      destacadas.forEach(m => cardsDestacadas.appendChild(crearCard(m, true)));
+      app.appendChild(cardsDestacadas);
+
+      // Otras cotizaciones
+      const tituloResto = document.createElement("h2");
+      tituloResto.className = "section-title";
+      tituloResto.textContent = "Otras cotizaciones";
+      app.appendChild(tituloResto);
+
+      const cardsResto = document.createElement("div");
+      cardsResto.className = "cards";
+      resto.forEach(m => cardsResto.appendChild(crearCard(m)));
+      app.appendChild(cardsResto);
+
+    } catch (err) {
+      app.innerHTML = `<div class="error">No se pudieron cargar los datos: ${err.message}</div>`;
+    }
+  }
+
+  cargarDatos();
+</script>
+
 </body>
 </html>
