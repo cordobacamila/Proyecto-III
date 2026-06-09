@@ -1,21 +1,21 @@
 # BCRA Daily Info
 
-App web que muestra la informacion diaria publicada por el Banco Central de la Republica Argentina (BCRA).
+App web que muestra la información diaria publicada por el Banco Central de la República Argentina (BCRA).
 
-## Descripcion
+## Descripción
 
-Consulta y visualiza los principales indicadores economicos del BCRA:
+Consulta y visualiza los principales indicadores económicos del BCRA:
 
 - Tipo de cambio oficial
 - Reservas internacionales
-- Tasas de interes
+- Tasas de interés
 - Base monetaria
 
-## Tecnologias
+## Tecnologías
 
 - HTML / CSS / JavaScript
-- API publica del BCRA
+- API pública del BCRA
 
-## Como usar
+## Cómo usar
 
 Abrir `index.html` en el navegador.
